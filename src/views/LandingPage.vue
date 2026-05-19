@@ -26,7 +26,7 @@
 
         <div v-else class="main-grid">
 
-          <!-- LEFT: Filter + Frequency Chart -->
+          <!-- LEFT COL -->
           <div class="left-col">
 
             <!-- Filter -->
@@ -51,6 +51,14 @@
                   </select>
                 </div>
               </div>
+            </div>
+
+            <!-- Total Participant Card -->
+            <div class="panel stat-card">
+              <div class="stat-icon"><i class="fas fa-users"></i></div>
+              <div class="stat-value">{{ totalParticipants }}</div>
+              <div class="stat-label">Total Participants</div>
+              <div class="stat-sub">Active commuters this period</div>
             </div>
 
             <!-- Frequency Chart -->
@@ -164,6 +172,7 @@ export default {
       filteredMonthlyMonths: [],
       athleteSearch: '',
       filteredMonthlyAthletes: [],
+      totalParticipants: '-',
       monthlyFreqDistribution: [
         { label: '1–4 days',   percentage: 0, count: '-', key: '1_to_4_days'   },
         { label: '5–9 days',   percentage: 0, count: '-', key: '5_to_9_days'   },
@@ -253,14 +262,19 @@ export default {
         })
         if (response.data?.status === 200) {
           const { athletes, frequency_distribution } = response.data.data
+
           this.monthlyAthletes = athletes.map(a => ({
             id:             a.id_athlete,
             name:           [a.athlete_firstname, a.athlete_lastname].filter(Boolean).join(' ') || 'Anonymous',
             active_days:    parseInt(a.active_days) || 0,
             total_distance: a.total_distance
           }))
+
+          this.totalParticipants = this.formatNumber(this.monthlyAthletes.length)
+
           this.athleteSearch = ''
           this.filteredMonthlyAthletes = [...this.monthlyAthletes]
+
           const dist = frequency_distribution
           const total = Object.values(dist).reduce((sum, v) => sum + parseInt(v || 0), 0)
           this.monthlyFreqDistribution.forEach(item => {
@@ -346,7 +360,7 @@ export default {
   font-size: 0.97rem; line-height: 1.65; color: #7a90a8;
 }
 
-/* ── MAIN GRID: left col + right panel sejajar ── */
+/* ── MAIN GRID ── */
 .main-grid {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -354,11 +368,13 @@ export default {
   align-items: start;
 }
 
-/* ── LEFT COLUMN: filter + chart stacked ── */
+/* ── LEFT COL ── */
 .left-col {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  position: sticky;
+  top: 2rem;
 }
 
 /* ── PANEL ── */
@@ -368,9 +384,6 @@ export default {
   border-radius: 18px;
   padding: 1.5rem;
 }
-.right-panel {
-  height: 100%;
-}
 .panel-header {
   display: flex; align-items: center; gap: 0.55rem;
   margin-bottom: 1.25rem;
@@ -378,6 +391,37 @@ export default {
 .panel-icon { font-size: 1rem; color: #c8f035; }
 .panel-title { font-size: 0.97rem; font-weight: 700; color: #e8edf5; }
 .panel-sub { font-size: 0.75rem; color: #3d5470; margin-left: auto; }
+
+/* ── STAT CARD ── */
+.stat-card {
+  text-align: center;
+  padding: 1.75rem 1.5rem;
+  border-top: 3px solid #c8f035;
+}
+.stat-icon {
+  font-size: 1.6rem;
+  color: #c8f035;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+.stat-value {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #c8f035;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.stat-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #e8edf5;
+  margin-bottom: 0.3rem;
+}
+.stat-sub {
+  font-size: 0.75rem;
+  color: #3d5470;
+}
 
 /* ── FILTER ── */
 .filter-stack { display: flex; flex-direction: column; gap: 1rem; }
@@ -437,10 +481,16 @@ export default {
 .table-count { font-size: 0.78rem; color: #3d5470; margin-bottom: 0.7rem; }
 
 /* ── TABLE ── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+}
+
 .athlete-table-wrap {
-  max-height: 500px; overflow-y: auto; overflow-x: auto;
+  max-height: 600px;
+  overflow-y: auto; overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid #445d8b;
+  border: 1px solid #243047;
   scrollbar-width: thin;
   scrollbar-color: #2d3d55 #0f1724;
 }
@@ -460,11 +510,11 @@ export default {
 .athlete-table td {
   padding: 11px 14px;
   color: #c8d6e8;
-  border-bottom: 1px solid #1a2638;
+  border-bottom: 1px solid #1e2d42;
   vertical-align: middle;
 }
 .athlete-table tbody tr:last-child td { border-bottom: none; }
-.athlete-table tbody tr:hover { background: #4a6b9a; transition: background 0.15s; }
+.athlete-table tbody tr:hover { background: #1e2d42; transition: background 0.15s; }
 
 .row-gold   { background: rgba(200, 240, 53, 0.06) !important; }
 .row-silver { background: rgba(180, 190, 210, 0.05) !important; }
@@ -474,7 +524,6 @@ export default {
 .col-name   { font-weight: 600; color: #e8edf5; }
 .col-center { text-align: center; }
 .rank-number { font-size: 0.8rem; font-weight: 700; color: #c8f035; }
-
 .days-badge {
   display: inline-block;
   background: rgba(200, 240, 53, 0.12);
@@ -508,13 +557,13 @@ export default {
 /* ── RESPONSIVE ── */
 @media (max-width: 860px) {
   .main-grid { grid-template-columns: 1fr; }
-  .left-col { flex-direction: row; }
-  .left-col .panel { flex: 1; }
+  .left-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .left-col .panel:last-child { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .landing { padding: 2rem 1rem 3rem; }
   .gradient-text { font-size: 2rem; }
-  .left-col { flex-direction: column; }
+  .left-col { display: flex; flex-direction: column; }
   .panel-sub { display: none; }
   .bar-mini-track { display: none; }
 }
