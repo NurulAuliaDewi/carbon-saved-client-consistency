@@ -185,8 +185,8 @@
 import ApexCharts from 'apexcharts';
 import axios from 'axios';
 
-// const API_BASE_URL = 'https://carbonsaved.bike2work.id/api';
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://consistency.bike2work.id/api';
+// const API_BASE_URL = 'http://localhost:5001/api';
 const THRESHOLDS = {
   day: { short: 15, mid: 30 },
   month: { short: 300, mid: 500 },
