@@ -35,7 +35,23 @@
                 <span class="panel-icon"><i class="fas fa-sliders-h"></i></span>
                 <h3 class="panel-title">Period</h3>
               </div>
-              <div class="filter-stack">
+
+              <!-- Mode toggle -->
+              <div class="mode-toggle">
+                <button
+                  class="mode-btn"
+                  :class="{ active: filterMode === 'month' }"
+                  @click="switchFilterMode('month')"
+                >Monthly</button>
+                <button
+                  class="mode-btn"
+                  :class="{ active: filterMode === 'range' }"
+                  @click="switchFilterMode('range')"
+                >Custom Range</button>
+              </div>
+
+              <!-- Monthly mode -->
+              <div v-if="filterMode === 'month'" class="filter-stack">
                 <div class="filter-group">
                   <label class="filter-label">Year</label>
                   <select v-model="monthlyFilterYear" @change="onMonthlyYearChange" class="dropdown">
@@ -51,6 +67,21 @@
                   </select>
                 </div>
               </div>
+
+              <!-- Custom range mode -->
+              <div v-if="filterMode === 'range'" class="filter-stack">
+                <div class="filter-group">
+                  <label class="filter-label">Start Date</label>
+                  <input type="date" v-model="startDate" class="dropdown date-input" />
+                </div>
+                <div class="filter-group">
+                  <label class="filter-label">End Date</label>
+                  <input type="date" v-model="endDate" class="dropdown date-input" />
+                </div>
+                <button class="apply-btn" @click="applyDateRange">
+                  <i class="fas fa-check"></i> Apply
+                </button>
+              </div>
             </div>
 
             <!-- Total Participant Card -->
@@ -62,7 +93,7 @@
             </div>
 
             <!-- Frequency Chart -->
-            <div class="panel">
+            <div class="panel freq-panel">
               <div class="panel-header">
                 <span class="panel-icon"><i class="fas fa-chart-bar"></i></span>
                 <h3 class="panel-title">Activity Frequency</h3>
@@ -164,6 +195,9 @@ export default {
   name: 'LandingPage',
   data() {
     return {
+      filterMode: 'month',
+      startDate: '',
+      endDate: '',
       loadingMonthlyFreq: false,
       monthlyFilterMonth: new Date().getMonth() + 1,
       monthlyFilterYear: new Date().getFullYear(),
@@ -181,7 +215,8 @@ export default {
         { label: '20+ days',   percentage: 0, count: '-', key: '20_plus_days'  }
       ],
       monthlyAthletes: [],
-      apiBaseUrl: process.env.VUE_APP_API_URL || 'https://consistency.bike2work.id/api'
+      apiBaseUrl: process.env.VUE_APP_API_URL || 'http://localhost:5001/api'
+      //|| 'https://consistency.bike2work.id/api'
     }
   },
 
@@ -257,9 +292,15 @@ export default {
     async fetchMonthlyActivityFrequency() {
       try {
         this.loadingMonthlyFreq = true
-        const response = await axios.get(`${this.apiBaseUrl}/monthly-activity-frequency`, {
-          params: { month: this.monthlyFilterMonth, year: this.monthlyFilterYear }
-        })
+
+        let params = {}
+        if (this.filterMode === 'range') {
+          params = { start_date: this.startDate, end_date: this.endDate }
+        } else {
+          params = { month: this.monthlyFilterMonth, year: this.monthlyFilterYear }
+        }
+
+        const response = await axios.get(`${this.apiBaseUrl}/monthly-activity-frequency`, { params })
         if (response.data?.status === 200) {
           const { athletes, frequency_distribution } = response.data.data
 
@@ -288,6 +329,29 @@ export default {
       } finally {
         this.loadingMonthlyFreq = false
       }
+    },
+    switchFilterMode(mode) {
+      this.filterMode = mode
+      if (mode === 'range' && !this.startDate) {
+        // default: first day of current month → today
+        const now = new Date()
+        const y = now.getFullYear()
+        const m = String(now.getMonth() + 1).padStart(2, '0')
+        const d = String(now.getDate()).padStart(2, '0')
+        this.startDate = `${y}-${m}-01`
+        this.endDate   = `${y}-${m}-${d}`
+      }
+      if (mode === 'month') {
+        this.fetchMonthlyActivityFrequency()
+      }
+    },
+    applyDateRange() {
+      if (!this.startDate || !this.endDate) return
+      if (this.startDate > this.endDate) {
+        alert('Start date must be before end date')
+        return
+      }
+      this.fetchMonthlyActivityFrequency()
     },
     onMonthlyYearChange() {
       this.filteredMonthlyMonths = this.availableMonths
@@ -423,6 +487,60 @@ export default {
   color: #3d5470;
 }
 
+/* ── MODE TOGGLE ── */
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  background: #0f1724;
+  border-radius: 10px;
+  padding: 4px;
+}
+.mode-btn {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: #3d5470;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.mode-btn.active {
+  background: #c8f035;
+  color: #0f1724;
+}
+.mode-btn:not(.active):hover { color: #7a90a8; }
+
+/* ── DATE INPUT ── */
+.date-input {
+  color-scheme: dark;
+}
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* ── APPLY BUTTON ── */
+.apply-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background: #c8f035;
+  border: none;
+  border-radius: 9px;
+  color: #0f1724;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 0.25rem;
+}
+.apply-btn:hover { opacity: 0.85; }
+.apply-btn i { margin-right: 4px; }
+
 /* ── FILTER ── */
 .filter-stack { display: flex; flex-direction: column; gap: 1rem; }
 .filter-group { display: flex; flex-direction: column; gap: 0.35rem; }
@@ -556,20 +674,39 @@ export default {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 860px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .left-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-  .left-col .panel:last-child { grid-column: 1 / -1; }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  .left-col {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .left-col .filter-panel { flex: 1; min-width: 200px; }
+  .left-col .stat-card    { flex: 1; min-width: 180px; }
+  .left-col .freq-panel   { width: 100%; }
+  .athlete-table-wrap { max-height: 450px; }
 }
 @media (max-width: 600px) {
-  .landing { padding: 2rem 1rem 3rem; }
-  .gradient-text { font-size: 2rem; }
-  .left-col { display: flex; flex-direction: column; }
+  .landing { padding: 1.5rem 1rem 3rem; }
+  .gradient-text { font-size: 1.8rem; }
+  .left-col {
+    flex-direction: column;
+  }
+  .left-col .filter-panel,
+  .left-col .stat-card,
+  .left-col .freq-panel { width: 100%; flex: none; min-width: unset; }
+  .stat-value { font-size: 2rem; }
   .panel-sub { display: none; }
   .bar-mini-track { display: none; }
+  .athlete-table-wrap { max-height: 360px; }
+  .athlete-table th:nth-child(4),
+  .athlete-table td:nth-child(4) { display: none; }
+  .panel { padding: 1.1rem; }
 }
 @media (max-width: 400px) {
-  .gradient-text { font-size: 1.65rem; }
-  .panel { padding: 1.25rem; }
-  .athlete-table th, .athlete-table td { padding: 9px 10px; font-size: 0.78rem; }
+  .gradient-text { font-size: 1.5rem; }
+  .athlete-table th, .athlete-table td { padding: 8px 8px; font-size: 0.76rem; }
+  .days-badge { padding: 2px 8px; font-size: 0.75rem; }
 }
 </style>
