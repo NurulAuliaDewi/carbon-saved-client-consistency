@@ -215,8 +215,7 @@ export default {
         { label: '20+ days',   percentage: 0, count: '-', key: '20_plus_days'  }
       ],
       monthlyAthletes: [],
-      apiBaseUrl: process.env.VUE_APP_API_URL || 'http://localhost:5001/api'
-      //|| 'https://consistency.bike2work.id/api'
+      apiBaseUrl: process.env.VUE_APP_API_URL || 'https://consistency.bike2work.id/api'
     }
   },
 
